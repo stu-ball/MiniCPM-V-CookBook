@@ -1019,6 +1019,41 @@ export function getJitterBufferStatus() {
 }
 
 export function useLiveKit() {
+    let screenTrack = null;
+    let screenStream = null;
+
+    async function startScreenShare() {
+        if (screenTrack) return;
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+            const [track] = screenStream.getVideoTracks();
+            if (!track) throw new Error('No screen video track');
+            // LiveKit expects a LocalVideoTrack
+            const { LocalVideoTrack } = await import('livekit-client');
+            screenTrack = new LocalVideoTrack(track);
+            await state.room.localParticipant.publishTrack(screenTrack);
+            // Optionally listen for screen share end
+            track.onended = () => {
+                stopScreenShare();
+            };
+        } catch (e) {
+            screenTrack = null;
+            screenStream = null;
+            throw e;
+        }
+    }
+
+    async function stopScreenShare() {
+        if (screenTrack) {
+            await state.room.localParticipant.unpublishTrack(screenTrack);
+            screenTrack.stop();
+            screenTrack = null;
+        }
+        if (screenStream) {
+            screenStream.getTracks().forEach(t => t.stop());
+            screenStream = null;
+        }
+    }
     // 摄像头切换防抖标记（浏览器级别保护）
     let isSwitchingCamera = false;
 
@@ -2140,6 +2175,8 @@ export function useLiveKit() {
 
                 if (isShort && remainingTime > 0) {
                     return {
+                        startScreenShare,
+                        stopScreenShare,
                         hasShort: true,
                         duration: audio.duration,
                         remainingTime: remainingTime * 1000

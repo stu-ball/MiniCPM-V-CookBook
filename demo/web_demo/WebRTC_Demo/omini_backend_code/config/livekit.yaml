@@ -10,7 +10,7 @@ rtc:
   # 禁用外部 IP 探测，使用指定的 node_ip
   use_external_ip: false
   # 使用宿主机实际 IP
-  node_ip: "192.168.31.127"
+  node_ip: "192.168.1.220"
 
 # 房间配置
 room:
@@ -25,7 +25,7 @@ keys:
 turn:
   enabled: true
   # 使用宿主机实际 IP
-  domain: "192.168.31.127"
+  domain: "192.168.1.220"
   # UDP端口
   udp_port: 7882
   # 不使用TLS（本地开发）

@@ -32,7 +32,7 @@ fi
 
 # ======================== Path Configuration ========================
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_DIR="$SCRIPT_DIR/WebRTC_Demo"
+PROJECT_DIR="$SCRIPT_DIR"
 LIVEKIT_CONFIG="$PROJECT_DIR/omini_backend_code/config/livekit.yaml"
 BACKEND_DIR="$PROJECT_DIR/omini_backend_code/code"
 FRONTEND_DIR="$PROJECT_DIR/o45-frontend"
