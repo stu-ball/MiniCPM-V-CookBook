@@ -1,4 +1,10 @@
 <template>
+    <!-- Always visible floating screen share button at the top of the page -->
+    <div style="position:fixed;top:0;left:0;width:100vw;z-index:99999;display:flex;justify-content:center;pointer-events:none;">
+        <button style="margin:16px;padding:24px 48px;font-size:32px;font-weight:bold;background:#ff0000;color:#fff;border:4px solid #000;border-radius:16px;box-shadow:0 0 24px #000;pointer-events:auto;cursor:pointer;" @click="isScreenSharing ? stopScreenShareHandler() : startScreenShareHandler()">
+            {{ isScreenSharing ? 'STOP SCREEN SHARE' : 'START SCREEN SHARE' }}
+        </button>
+    </div>
     <div class="remote-audio" v-for="(tracks, sid) in state.remoteTracks" :key="sid">
         <audio :ref="setRemoteAudioRef(sid)" autoplay></audio>
     </div>
@@ -46,6 +52,37 @@
             </div>
         </div>
         <div class="video-page-btn">
+            <!-- DEBUG: Show call state -->
+            <div style="color: red; font-weight: bold;">DEBUG isCalling: {{ isCalling }} | callLoading: {{ callLoading }}</div>
+            <!-- Always show screen share button for debug -->
+            <div class="screen-share-btn" style="display: flex; align-items: center; gap: 12px; background: #fffbe6; border: 2px solid #ffd700; border-radius: 8px; padding: 8px 16px; box-shadow: 0 0 10px #ffd700;">
+                <el-button
+                    type="primary"
+                    size="large"
+                    :icon="isScreenSharing ? 'el-icon-monitor' : 'el-icon-monitor'"
+                    style="background: #ffd700; color: #222; font-weight: bold; border: 2px solid #ffd700; font-size: 20px;"
+                    @click="isScreenSharing ? stopScreenShareHandler() : startScreenShareHandler()"
+                >
+                    {{ isScreenSharing ? t('Stop Screen Share') : t('Share Screen') }}
+                </el-button>
+                <button style="background: #ffd700; color: #222; font-size: 20px; font-weight: bold; border: 2px solid #ffd700; border-radius: 6px; padding: 8px 16px; box-shadow: 0 0 6px #ffd700; cursor: pointer;" @click="isScreenSharing ? stopScreenShareHandler() : startScreenShareHandler()">
+                    {{ isScreenSharing ? 'DEBUG: STOP SHARING' : 'DEBUG: SHARE SCREEN' }}
+                </button>
+                <span style="margin-left: 12px; font-size: 16px; color: #b8860b; font-weight: bold;">
+                    [ScreenShare: {{ isScreenSharing ? 'ON' : 'OFF' }}]
+                </span>
+            </div>
+            <!-- Screen Share Button (Always visible for debug) -->
+            <div class="screen-share-btn">
+                <el-button
+                    type="primary"
+                    size="small"
+                    :icon="isScreenSharing ? 'el-icon-monitor' : 'el-icon-monitor'"
+                    @click="isScreenSharing ? stopScreenShareHandler() : startScreenShareHandler()"
+                >
+                    {{ isScreenSharing ? t('Stop Screen Share') : t('Share Screen') }}
+                </el-button>
+            </div>
             <div class="interrupt-btn" v-if="isCalling && state.status === 'talking'" @click="interruptChat">
                 <!-- <div class="interrupt-btn" @click="interruptChat"> -->
                 <SvgIcon name="interrupt" class="interrupt-icon" />
@@ -110,6 +147,10 @@
     <DraggableDialog v-if="showText" :message="state.chatMessages" @close="showText = false" />
 </template>
 <script setup>
+// --- Screen Share State ---
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
+const isScreenSharing = ref(false);
+let screenShareCleanup = null;
     import { Loading } from '@element-plus/icons-vue';
     import { sendMessage, stopMessage, uploadConfig, getRtcToken, logoutRtc } from '@/apis';
     import { encodeWAV } from '@/hooks/useVoice';
@@ -155,7 +196,9 @@
         checkCurrentCamera, // 新增：检查当前摄像头
         compareFieldOfView, // 新增：视野对比测试
         debugVideoState, // 新增：视频状态诊断
-        clearCameraCache // 新增：清除摄像头缓存
+        clearCameraCache, // 新增：清除摄像头缓存
+        startScreenShare,
+        stopScreenShare
     } = useLiveKit();
 
     // 🔧 调试：暴露到全局，方便控制台调用（已完成调试，暂时注释）
@@ -908,6 +951,43 @@
                 console.warn(`⚠️ 音频元素尚未就绪: ${sid}`);
             }
         });
+    
+        // --- Screen Share: Listen for browser stop ---
+        onMounted(() => {
+            // Listen for screen share end from browser UI
+            window.addEventListener('visibilitychange', handleScreenShareEnd, false);
+        });
+        onBeforeUnmount(() => {
+            window.removeEventListener('visibilitychange', handleScreenShareEnd, false);
+            if (screenShareCleanup) screenShareCleanup();
+        });
+        function handleScreenShareEnd() {
+            // If user stops sharing via browser UI
+            if (isScreenSharing.value && !getScreenShareActive()) {
+                stopScreenShareHandler();
+            }
+        }
+        function getScreenShareActive() {
+            // Check if any display media tracks are active
+            const streams = navigator.mediaDevices.getDisplayMedia ? [] : [];
+            // Not reliable, so just rely on state
+            return isScreenSharing.value;
+        }
+        async function startScreenShareHandler() {
+            try {
+                await startScreenShare();
+                isScreenSharing.value = true;
+                // Optionally, set up cleanup if needed
+                screenShareCleanup = () => stopScreenShareHandler();
+            } catch (e) {
+                isScreenSharing.value = false;
+            }
+        }
+        async function stopScreenShareHandler() {
+            await stopScreenShare();
+            isScreenSharing.value = false;
+            screenShareCleanup = null;
+        }
 
         console.log('🎯 LiveKit事件处理器已设置 (激进模式)');
     }

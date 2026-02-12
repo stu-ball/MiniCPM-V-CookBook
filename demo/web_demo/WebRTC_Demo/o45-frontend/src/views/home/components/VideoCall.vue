@@ -58,9 +58,36 @@
             </el-button>
         </div>
         <IdeasList v-if="showIdeasList" :ideasList="videoIdeasList" />
+        <div class="screen-share-btns" v-if="isCalling">
+            <el-button v-if="!isScreenSharing" @click="handleStartScreenShare" type="primary">Share Screen</el-button>
+            <el-button v-else @click="handleStopScreenShare" type="warning">Stop Sharing</el-button>
+        </div>
     </div>
 </template>
 <script setup>
+import { ref, computed } from 'vue';
+import { useLiveKit } from '@/hooks/useLiveKit';
+
+// Screen share state
+const isScreenSharing = ref(false);
+const liveKit = useLiveKit();
+
+const handleStartScreenShare = async () => {
+    try {
+        await liveKit.startScreenShare();
+        isScreenSharing.value = true;
+    } catch (e) {
+        isScreenSharing.value = false;
+    }
+};
+
+const handleStopScreenShare = async () => {
+    try {
+        await liveKit.stopScreenShare();
+    } finally {
+        isScreenSharing.value = false;
+    }
+};
     import { sendMessage, stopMessage, uploadConfig } from '@/apis';
     import { encodeWAV } from '@/hooks/useVoice';
     import { getNewUserId, setNewUserId } from '@/hooks/useRandomId';
