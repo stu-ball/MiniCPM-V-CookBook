@@ -105,7 +105,7 @@ declare global {
   const refThrottled: typeof import('@vueuse/core')['refThrottled']
   const refWithControl: typeof import('@vueuse/core')['refWithControl']
   const registerByEmail: typeof import('./src/apis/index.js')['registerByEmail']
-  const registerCleanup: typeof import('./src/hooks/useLiveKitStatic.js')['registerCleanup']
+  const registerCleanup: typeof import('./src/hooks/useLiveKit.js')['registerCleanup']
   const registerLocalVideoElement: typeof import('./src/hooks/useLiveKit.js')['registerLocalVideoElement']
   const registerTrackSubscribed: typeof import('./src/hooks/useLiveKit.js')['registerTrackSubscribed']
   const resolveComponent: typeof import('vue')['resolveComponent']
@@ -227,7 +227,7 @@ declare global {
   const useKeyModifier: typeof import('@vueuse/core')['useKeyModifier']
   const useLastChanged: typeof import('@vueuse/core')['useLastChanged']
   const useLink: typeof import('vue-router')['useLink']
-  const useLiveKit: typeof import('./src/hooks/useLiveKitStatic.js')['useLiveKit']
+  const useLiveKit: typeof import('./src/hooks/useLiveKit.js')['useLiveKit']
   const useLocalStorage: typeof import('@vueuse/core')['useLocalStorage']
   const useMagicKeys: typeof import('@vueuse/core')['useMagicKeys']
   const useManualRefHistory: typeof import('@vueuse/core')['useManualRefHistory']
@@ -452,7 +452,7 @@ declare module 'vue' {
     readonly refThrottled: UnwrapRef<typeof import('@vueuse/core')['refThrottled']>
     readonly refWithControl: UnwrapRef<typeof import('@vueuse/core')['refWithControl']>
     readonly registerByEmail: UnwrapRef<typeof import('./src/apis/index.js')['registerByEmail']>
-    readonly registerCleanup: UnwrapRef<typeof import('./src/hooks/useLiveKitStatic.js')['registerCleanup']>
+    readonly registerCleanup: UnwrapRef<typeof import('./src/hooks/useLiveKit.js')['registerCleanup']>
     readonly registerLocalVideoElement: UnwrapRef<typeof import('./src/hooks/useLiveKit.js')['registerLocalVideoElement']>
     readonly registerTrackSubscribed: UnwrapRef<typeof import('./src/hooks/useLiveKit.js')['registerTrackSubscribed']>
     readonly resolveComponent: UnwrapRef<typeof import('vue')['resolveComponent']>
@@ -574,7 +574,7 @@ declare module 'vue' {
     readonly useKeyModifier: UnwrapRef<typeof import('@vueuse/core')['useKeyModifier']>
     readonly useLastChanged: UnwrapRef<typeof import('@vueuse/core')['useLastChanged']>
     readonly useLink: UnwrapRef<typeof import('vue-router')['useLink']>
-    readonly useLiveKit: UnwrapRef<typeof import('./src/hooks/useLiveKitStatic.js')['useLiveKit']>
+    readonly useLiveKit: UnwrapRef<typeof import('./src/hooks/useLiveKit.js')['useLiveKit']>
     readonly useLocalStorage: UnwrapRef<typeof import('@vueuse/core')['useLocalStorage']>
     readonly useMagicKeys: UnwrapRef<typeof import('@vueuse/core')['useMagicKeys']>
     readonly useManualRefHistory: UnwrapRef<typeof import('@vueuse/core')['useManualRefHistory']>

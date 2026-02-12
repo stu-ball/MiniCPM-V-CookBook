@@ -33,8 +33,18 @@ export default defineConfig({
                     prefix: 'Icon'
                 })
             ],
-            imports: ['vue', 'vue-router', '@vueuse/core'],
-            dirs: ['src/apis/**/*', 'src/hooks/*'],
+            imports: [
+                'vue',
+                'vue-router',
+                '@vueuse/core',
+                {
+                    '@/hooks/useHttp': [
+                        ['default', 'useHttp']
+                    ]
+                }
+            ],
+            // Only auto-import main hooks, not static variants
+            dirs: ['src/apis/**/*', 'src/hooks'],
             vueTemplate: true,
             eslintrc: {
                 enabled: true

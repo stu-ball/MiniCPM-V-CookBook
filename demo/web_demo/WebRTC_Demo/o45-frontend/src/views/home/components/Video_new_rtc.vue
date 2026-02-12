@@ -46,6 +46,20 @@
             </div>
         </div>
         <div class="video-page-btn">
+            <el-button
+                id="screen-share-btn"
+                type="primary"
+                style="margin-bottom: 12px; display: block;"
+                :disabled="!isCalling"
+                @click="handleScreenShare"
+            >🖥️ Share Screen</el-button>
+            <el-button
+                v-if="screenSharing"
+                id="stop-screen-share-btn"
+                type="warning"
+                style="margin-bottom: 12px; display: block;"
+                @click="handleScreenShare"
+            >🛑 Stop Sharing</el-button>
             <div class="interrupt-btn" v-if="isCalling && state.status === 'talking'" @click="interruptChat">
                 <!-- <div class="interrupt-btn" @click="interruptChat"> -->
                 <SvgIcon name="interrupt" class="interrupt-icon" />
@@ -110,7 +124,34 @@
     <DraggableDialog v-if="showText" :message="state.chatMessages" @close="showText = false" />
 </template>
 <script setup>
-    import { Loading } from '@element-plus/icons-vue';
+// Screen share button logic
+import { ElMessage } from 'element-plus';
+import { useLiveKit } from '@/hooks/useLiveKit';
+let screenSharing = ref(false);
+
+// Use the main useLiveKit instance for all destructuring
+const liveKit = useLiveKit();
+// Use methods directly from liveKit to avoid destructuring issues
+// const { startScreenShare, stopScreenShare } = liveKit;
+
+async function handleScreenShare() {
+    if (!screenSharing.value) {
+        try {
+            await liveKit.startScreenShare();
+            screenSharing.value = true;
+        } catch (e) {
+            ElMessage({ type: 'error', message: 'Screen share failed: ' + e.message });
+            screenSharing.value = false;
+        }
+    } else {
+        try {
+            await liveKit.stopScreenShare();
+        } finally {
+            screenSharing.value = false;
+        }
+    }
+}
+import { Loading } from '@element-plus/icons-vue';
     import { sendMessage, stopMessage, uploadConfig, getRtcToken, logoutRtc } from '@/apis';
     import { encodeWAV } from '@/hooks/useVoice';
     import { getNewUserId, setNewUserId } from '@/hooks/useRandomId';
@@ -131,8 +172,8 @@
 
     // import AudioPlayer from './audioPlayer/useAudioStream';
     // const audioStream = AudioPlayer();
+    // Removed duplicate import of useLiveKit
     import {
-        useLiveKit,
         registerCleanup,
         registerTrackSubscribed,
         triggerCleanup,
@@ -156,7 +197,7 @@
         compareFieldOfView, // 新增：视野对比测试
         debugVideoState, // 新增：视频状态诊断
         clearCameraCache // 新增：清除摄像头缓存
-    } = useLiveKit();
+    } = liveKit;
 
     // 🔧 调试：暴露到全局，方便控制台调用（已完成调试，暂时注释）
     // if (typeof window !== 'undefined') {

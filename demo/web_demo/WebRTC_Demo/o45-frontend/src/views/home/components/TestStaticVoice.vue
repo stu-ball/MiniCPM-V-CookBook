@@ -112,7 +112,7 @@
     // const audioStream = AudioPlayer();
 
     // 使用静态媒体的 LiveKit hook
-    import { useLiveKit, registerCleanup } from '@/hooks/useLiveKitStatic';
+    import { useLiveKit, registerCleanup } from '@/hooks/static/useLiveKitStatic';
     import { resolveLivekitUrl } from '@/utils/rtcUrl';
 
     const {

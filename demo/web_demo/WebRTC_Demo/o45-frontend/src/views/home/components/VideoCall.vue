@@ -56,12 +56,19 @@
                 <span class="btn-text">{{ t('hangUpBtn') }}</span>
                 <CountDown v-model="isCalling" @timeUp="stopRecording" />
             </el-button>
+            <!-- Screen Share Button Always Visible -->
+            <el-button
+                v-if="true"
+                :disabled="false"
+                @click="handleStartScreenShare"
+                type="primary"
+                style="margin-left: 12px; font-weight: bold; font-size: 18px; background: #ff9800; color: #fff; border: 2px solid #ff9800;"
+                id="screen-share-btn"
+            >🖥️ Share Screen</el-button>
+            <el-button v-if="isScreenSharing" @click="handleStopScreenShare" type="warning" style="margin-left: 12px;" id="stop-screen-share-btn">Stop Sharing</el-button>
         </div>
         <IdeasList v-if="showIdeasList" :ideasList="videoIdeasList" />
-        <div class="screen-share-btns" v-if="isCalling">
-            <el-button v-if="!isScreenSharing" @click="handleStartScreenShare" type="primary">Share Screen</el-button>
-            <el-button v-else @click="handleStopScreenShare" type="warning">Stop Sharing</el-button>
-        </div>
+        <!-- Screen share button block removed: now always shown in main controls -->
     </div>
 </template>
 <script setup>
@@ -72,12 +79,61 @@ import { useLiveKit } from '@/hooks/useLiveKit';
 const isScreenSharing = ref(false);
 const liveKit = useLiveKit();
 
+watch(
+    () => liveKit.screenShareEnabled,
+    (val) => {
+        isScreenSharing.value = val;
+    }
+);
+
 const handleStartScreenShare = async () => {
     try {
+        // Auto trigger room join if not connected
+        if (!liveKit.connected) {
+            await initRecording(); // Triggers LiveKit room join
+            let retries = 0;
+            while (!liveKit.connected && retries < 20) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                retries++;
+            }
+            if (!liveKit.connected) {
+                ElMessage({
+                    type: 'error',
+                    message: 'Failed to join LiveKit Room. Cannot start screen sharing.',
+                    duration: 3000,
+                    showClose: true
+                });
+                return;
+            }
+        }
+        // Ensure screenShareEnabled is reset before starting
+        isScreenSharing.value = false;
         await liveKit.startScreenShare();
+        // Wait for screenShareEnabled to update
+        let shareRetries = 0;
+        while (!liveKit.screenShareEnabled && shareRetries < 20) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            shareRetries++;
+        }
+        if (!liveKit.screenShareEnabled) {
+            ElMessage({
+                type: 'error',
+                message: 'Screen sharing failed to start. Please check browser permissions.',
+                duration: 3000,
+                showClose: true
+            });
+            isScreenSharing.value = false;
+            return;
+        }
         isScreenSharing.value = true;
     } catch (e) {
         isScreenSharing.value = false;
+        ElMessage({
+            type: 'error',
+            message: 'Screen sharing error: ' + (e?.message || e),
+            duration: 3000,
+            showClose: true
+        });
     }
 };
 
@@ -139,7 +195,7 @@ const handleStopScreenShare = async () => {
 
     const isFirstPiece = ref(true);
     const allVoice = ref([]);
-    const callDisabled = ref(true);
+    const callDisabled = ref(false);
 
     const feedbackStatus = ref('');
     const curResponseId = ref('');
@@ -186,17 +242,8 @@ const handleStopScreenShare = async () => {
         });
         myvad.start();
     };
-    onMounted(async () => {
-        const { code, message } = await stopMessage();
-        if (code !== 0) {
-            ElMessage({
-                type: 'error',
-                message: message,
-                duration: 3000,
-                customClass: 'system-error'
-            });
-            return;
-        }
+    onMounted(() => {
+        // Button is always enabled for testing
         callDisabled.value = false;
     });
     const delay = ms => {
@@ -205,6 +252,18 @@ const handleStopScreenShare = async () => {
     const initRecording = async () => {
         // 每次call都需要生成新uid
         setNewUserId();
+        // --- LiveKit room join logic ---
+        try {
+            // Get RTC token and LiveKit URL from backend
+            const rtcResp = await getRtcToken('omni');
+            const liveKitUrl = rtcResp?.data?.liveKitUrl || '';
+            const liveKitToken = rtcResp?.data?.token || '';
+            if (liveKitUrl && liveKitToken) {
+                await liveKit.joinRoom(liveKitUrl, liveKitToken, 'video');
+            }
+        } catch (e) {
+            console.error('LiveKit joinRoom failed:', e);
+        }
         uploadUserConfig()
             .then(async () => {
                 if (!audioDOM) {
@@ -221,7 +280,7 @@ const handleStopScreenShare = async () => {
                 //     `/ws/stream${window.location.search}&uid=${getNewUserId()}&service=minicpmo-server`
                 // );
                 // socket.connect();
-
+                
                 initVideoStream('environment');
                 if (localStorage.getItem('canStopByVoice') === 'true') {
                     console.log('vad start');
